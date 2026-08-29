@@ -52,16 +52,31 @@ systemctl --user enable --now drp-web
 journalctl --user -u drp-web -f
 ```
 
-Remote access needs one more command from the operator, whose config lives in
-`tailscaled` rather than in this repo — nothing here regenerates it and nothing here
-will tell you it is missing:
+Remote access lives in `tailscaled` rather than in this repo — nothing here
+regenerates it and nothing here will tell you it is missing. There are two paths to it,
+and both are configured (2026-08-29):
 
 ```bash
+# 1. Node port. http://evo-x3:8095 -- the name, never the 100.x address, which returns
+#    tailscaled's own 404 (halo-prep pitfall #33).
 tailscale serve --bg --http=8095 http://127.0.0.1:8095
+
+# 2. A Tailscale Service: http://drp-web/ , its own name and VIP on the tailnet, so the
+#    address survives this moving to another machine and nobody has to know a port.
+tailscale serve --service=svc:drp-web --bg --yes --http=80 http://127.0.0.1:8095
 ```
 
-Then `http://evo-x3:8095` from any machine on the tailnet — the name, never the `100.x`
-address, which returns tailscaled's own 404.
+The second needs three things that are NOT in this repo and that the command will not
+create for you: the Service defined in the admin console (`svc:drp-web`, `tcp:80`), a
+tailnet policy that grants it, and **a tagged host** -- `tailscale up
+--advertise-tags=tag:server`, since a Service host must be a tagged node. Tagging
+changes the device's owner from you to the tailnet, which also means the stock
+Tailscale SSH rule (`dst: ["autogroup:self"]`) stops covering this box: the policy
+needs a second rule for `tag:server` or you lose SSH to it. Re-run `tailscale up` with
+`--ssh --operator=<user>` as well, or those preferences are cleared.
+
+Until the host is approved in the console the command says so plainly and serves
+nothing.
 
 ## What it assumes is already there
 
