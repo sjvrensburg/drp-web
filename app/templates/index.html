@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% set page = "new" %}
+{% block title %}new run — deep-research-podcast{% endblock %}
+{% block pagetitle %}Start a deep-research episode{% endblock %}
+{% block body %}
+<p class="lede">One sub-question per line. Each is researched on its own by
+OpenResearcher against local SearXNG — 15–40 minutes apiece — and only the ones that
+came back <em>grounded in pages actually read</em> reach the episode. A full run is
+hours; start it and close the tab.</p>
+
+{# The four services a run touches, plus free memory. Never a refusal: the operator
+   knows what else is on the box, and MemAvailable cannot see the GTT pressure that
+   is what actually OOM-kills a run here. #}
+<ul class="checks">
+  <li><span class="dot {{ 'up' if health.open_notebook else 'down' }}"></span>Open Notebook</li>
+  <li><span class="dot {{ 'up' if health.writer else 'down' }}"></span>writer :8088</li>
+  <li><span class="dot {{ 'up' if health.searxng else 'down' }}"></span>SearXNG</li>
+  <li><span class="dot {{ 'up' if health.research_unit == 'active' else 'idle' }}"></span>
+      research model {{ health.research_unit }}{% if health.research_unit != 'active' %}
+      <span class="muted">(on demand — the run starts it)</span>{% endif %}</li>
+  {% if health.memory_gib %}
+  <li><span class="dot {{ 'down' if health.memory_low else 'up' }}"></span>
+      {{ '%.1f'|format(health.memory_gib) }} GiB free</li>
+  {% endif %}
+</ul>
+
+{% if not health.pipeline_present %}
+  <div class="warn"><strong>The pipeline is not where this app expects it.</strong>
+  Nothing can run until <code>deep-research-podcast.py</code> is at the configured path.</div>
+{% endif %}
+{% if health.memory_low %}
+  <div class="warn">Only {{ '%.1f'|format(health.memory_gib) }} GiB free. The research model is
+  ~30B at a 131k context and has been OOM-killed on this box when started beside the
+  resident servers. Free some memory first, or expect the run to die in preflight.</div>
+{% endif %}
+{% if not health.open_notebook %}
+  <div class="warn">Open Notebook is not answering. Research would still run, but the
+  episode has nowhere to go.</div>
+{% endif %}
+
+{% if active %}
+  <div class="card">
+    <p><span class="status running">running</span>
+      <a href="/runs/{{ active.id }}">{{ active.episode_name }}</a>
+      <span class="muted">— {{ active.elapsed_seconds() | duration }} in</span></p>
+    <p class="muted small">One run at a time: two would both start and stop the same
+      on-demand research model, and the box does not have the memory for both. Anything
+      you start now waits its turn.</p>
+  </div>
+{% endif %}
+
+{# Suggest and Start are two forms, and the suggest one posts to a different route on
+   purpose: drafting must never be one mistaken keypress away from committing three
+   hours of GPU. #}
+<div class="card">
+  <form method="post" action="/suggest">
+    <label>Topic
+      <span class="hint">Optional. Drafts sub-questions with the writer model for you to edit —
+        it starts nothing.</span>
+      <input type="text" name="topic" value="{{ topic or '' }}"
+             placeholder="e.g. the state of local speech synthesis for long-form narration">
+    </label>
+    <div class="inline">
+      <button type="submit" class="secondary">Suggest sub-questions</button>
+      <label class="muted small">how many
+        <input type="number" name="count" value="4" min="2" max="{{ max_questions }}"
+               style="width:5rem;min-height:2.4rem">
+      </label>
+    </div>
+  </form>
+  {% if suggest_error %}<p class="bad small">{{ suggest_error }}</p>{% endif %}
+</div>
+
+<form class="card" method="post" action="/runs" enctype="multipart/form-data">
+  <label>Sub-questions
+    <span class="hint">One per line, at most {{ max_questions }}. Each becomes its own research
+      run; they are researched in order. Nothing splits these for you — that is deliberate.</span>
+    <textarea name="questions" rows="6" required
+              placeholder="What has changed in X since 2025?&#10;How does X compare to Y on cost and latency?">{{ questions_text or '' }}</textarea>
+  </label>
+
+  <div class="row">
+    <label>Episode name
+      <input type="text" name="episode_name" required value="{{ episode_name_hint or '' }}">
+    </label>
+    <label>Notebook name
+      <span class="hint">Defaults to the episode name.</span>
+      <input type="text" name="notebook_name" value="">
+    </label>
+  </div>
+
+  <div class="row">
+    <label>Episode profile
+      <select name="episode_profile">
+        {% for name in profiles.episode or [defaults.episode_profile] %}
+          <option value="{{ name }}" {% if name == defaults.episode_profile %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Speaker profile
+      <select name="speaker_profile">
+        {% for name in profiles.speaker or [defaults.speaker_profile] %}
+          <option value="{{ name }}" {% if name == defaults.speaker_profile %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Turn budget
+      <span class="hint">Per sub-question. Don't go below ~80 for a comparative or
+        "what's changed since" question — trim the question count instead.</span>
+      <input type="number" name="max_turns" value="{{ defaults.max_turns }}" min="40" max="300">
+    </label>
+  </div>
+  {% if not profiles.episode %}
+    <p class="muted small">Open Notebook did not answer, so these are the configured defaults
+      rather than the live list.</p>
+  {% endif %}
+
+  <details>
+    <summary>Briefing and a source document</summary>
+    <label>Briefing suffix
+      <span class="hint">Appended to the narrators' briefing — what to emphasise, who the
+        listener is. Left empty, the pipeline's own default briefing is used.</span>
+      <textarea name="briefing_suffix" rows="3">{{ briefing_suffix or '' }}</textarea>
+    </label>
+    <label>Source document
+      <span class="hint">Already-converted text or markdown — a paper to ground the episode in
+        directly. <strong>Not a PDF:</strong> convert it with
+        <a href="http://evo-x3:8093/marker">marker</a> first. Nothing here converts documents,
+        and an episode will happily narrate whatever it is handed.</span>
+      <input type="file" name="source_document" accept=".md,.markdown,.txt,text/plain,text/markdown">
+    </label>
+    <label>Document title
+      <span class="hint">Defaults to the filename.</span>
+      <input type="text" name="source_document_title" value="">
+    </label>
+  </details>
+
+  <p><button type="submit">Start the run</button>
+    {% if active or queued %}<span class="muted">
+      {{ (queued|length) + (1 if active else 0) }} ahead of it</span>{% endif %}</p>
+</form>
+
+{% if recent %}
+<h2>Recent runs</h2>
+<div class="scroll"><table>
+  {% for run in recent %}
+  <tr>
+    <td><a href="/runs/{{ run.id }}">{{ run.episode_name }}</a>
+      <div class="muted small">{{ run.questions|length }} sub-question(s)</div></td>
+    <td><span class="status {{ run.status }}">{{ run.status }}</span></td>
+    <td class="muted small">{{ run.elapsed_seconds() | duration }}</td>
+    <td class="muted small">{{ run.meta.created_at | ago }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

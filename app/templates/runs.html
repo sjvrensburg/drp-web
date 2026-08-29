@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% set page = "runs" %}
+{% block title %}runs — deep-research-podcast{% endblock %}
+{% block pagetitle %}Runs{% endblock %}
+{% block body %}
+{% if not runs %}
+  <p class="lede">Nothing yet. <a href="/">Start a run.</a></p>
+{% else %}
+<div class="scroll"><table>
+  <tr><th>episode</th><th>status</th><th>episode audio</th><th>took</th><th>started</th></tr>
+  {% for run in runs %}
+  <tr>
+    <td><a href="/runs/{{ run.id }}">{{ run.episode_name }}</a>
+      <div class="muted small">{{ run.questions|length }} sub-question(s)</div></td>
+    <td><span class="status {{ run.status }}">{{ run.status }}</span></td>
+    <td class="small">
+      {%- if run.episode.audio_rel %}<a href="/runs/{{ run.id }}/audio">listen</a>
+      {%- elif run.episode.status %}<span class="muted">{{ run.episode.status }}</span>
+      {%- else %}<span class="muted">—</span>{% endif -%}
+    </td>
+    <td class="muted small">{{ run.elapsed_seconds() | duration }}</td>
+    <td class="muted small">{{ (run.meta.started_at or run.meta.created_at) | ago }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+<p class="small muted">Run directories live in
+  <code>~/.local/state/drp-web/runs/</code> — the log, the research JSON, and any uploaded
+  document — and are kept for 90 days. Episode audio belongs to Open Notebook and is not
+  deleted from here.</p>
+{% endif %}
+{% endblock %}

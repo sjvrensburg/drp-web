@@ -1,0 +1,39 @@
+# drp-web -- browser front end for deep-research-podcast, over Tailscale (:8095).
+#
+#   cp config/drp-web.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now drp-web
+#
+# Remote access additionally needs, from the operator:
+#   sudo tailscale serve --bg --http=8095 http://127.0.0.1:8095
+# which lives in tailscaled, not in this repo, and will not survive a rebuild.
+
+[Unit]
+Description=drp-web — deep-research-podcast in a browser (:8095)
+# Not After= the llama or Open Notebook units. This app must come up and stay up while
+# they are down, so that it can SAY they are down on the form.
+
+[Service]
+Type=exec
+WorkingDirectory=/home/stefan/Projects/drp-web
+# --host 127.0.0.1: never a routable address. `tailscale serve` proxies to loopback, so
+# a firewall mistake cannot expose this to the LAN.
+#
+# NO --workers. One supervisor: a second process would have its own view of the single
+# run slot and could launch a second research model onto a box that OOMs under one.
+# (The state-directory flock in app/runs.py makes that refusal loud rather than silent,
+# but the right number is still one.)
+#
+# A run executes in a transient unit of its own (drp-web-run-<id>.service), which
+# therefore SURVIVES `systemctl --user stop drp-web`. That is deliberate and is the
+# whole reason the runs are not threads: restarting this app must not cost a 3-hour
+# run. Do not add KillMode=none or Delegate= to "fix" it.
+ExecStart=/home/stefan/venvs/drpweb/bin/uvicorn app.main:app --host 127.0.0.1 --port 8095
+# Python block-buffers stdout when it is a pipe, so without this the journal shows the
+# supervisor's lines minutes late, in a lump -- on a service whose normal state is
+# "quiet for forty minutes".
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

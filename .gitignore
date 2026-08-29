@@ -1,0 +1,9 @@
+# Run state: research results, uploaded source documents, and the pipeline's own
+# log for every run. Never commit these -- a source document is the user's
+# unpublished paper, and a research log carries every page the researcher read.
+state/
+*.pdf
+*.md.orig
+__pycache__/
+*.pyc
+.venv/

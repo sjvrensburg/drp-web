@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% set page = "runs" %}
+{% block title %}{{ run.episode_name }} — deep-research-podcast{% endblock %}
+{% block head %}
+{% if run.status in ("queued", "running") or (state.job_id and run.episode.status not in ("completed","failed","error","cancelled")) %}
+  {# Meta refresh, not JS: this page is watched for hours from a tab that may be
+     restored long after it was opened, and a meta refresh survives that. 20s, not 5 --
+     the fastest thing on this page moves once a minute. #}
+  <meta http-equiv="refresh" content="20">
+{% endif %}
+{% endblock %}
+{% block pagetitle %}{{ run.episode_name }}{% endblock %}
+{% block body %}
+
+<div class="card">
+  <p><span class="status {{ run.status }}">{{ run.status }}</span>
+     <span class="muted">{{ run.questions|length }} sub-question(s),
+       {{ run.params.max_turns }} turns each</span></p>
+
+  {# Elapsed time first, and largest. The single most likely misreading of this page is
+     "it has hung" during a sub-question -- the pipeline captures the researcher's own
+     output, so a healthy run is silent for 15-40 minutes at a time. #}
+  <p class="big">{{ run.elapsed_seconds() | duration }}
+    <span class="muted" style="font-size:1rem">
+      {% if run.status == "queued" %}waiting for the slot
+      {% elif run.status == "running" %}elapsed — a full run is hours
+      {% else %}total{% endif %}</span></p>
+
+  <ol class="phases">
+    {% set order = ["starting","research","notebook","episode","finished"] %}
+    {% set labels = {"starting":"preflight","research":"research","notebook":"notebook",
+                     "episode":"episode","finished":"done"} %}
+    {% set at = "finished" if run.status == "done" else (state.reached if state.reached in order else "starting") %}
+    {% for phase in order %}
+      <li class="{% if phase == at and run.status == 'running' %}at{% elif order.index(phase) < order.index(at) or run.status == 'done' %}past{% endif %}">{{ labels[phase] }}</li>
+    {% endfor %}
+  </ol>
+
+  {% if run.status == "running" %}
+    <p class="small muted">
+      {% if state.phase == "research" %}
+        {% if state.turn %}
+          Researcher is on <strong>turn {{ state.turn.turn }}</strong> —
+          <code>{{ state.turn.tool }}({{ state.turn.args }})</code>
+        {% elif researcher_alive %}
+          A researcher process is running. The pipeline captures its per-turn output, so
+          this section stays quiet until the sub-question finishes — that silence is normal
+          and can last 40 minutes.
+        {% else %}
+          No researcher process is visible right now. Between sub-questions this is normal;
+          for more than a minute or two it is not.
+        {% endif %}
+      {% elif state.phase == "starting" %}
+        Preflight: starting the on-demand research model. This is where an out-of-memory
+        kill shows up.
+      {% elif state.phase == "notebook" %}
+        Research is done and persisted. Building the notebook, then triggering the episode.
+      {% elif state.phase == "episode" %}
+        Research is done; Open Notebook is generating the episode.
+      {% endif %}
+    </p>
+  {% endif %}
+
+  {% if run.error %}<p class="bad">{{ run.error }}</p>{% endif %}
+  {% if state.failure %}<p class="bad"><strong>Pipeline failure:</strong> {{ state.failure }}</p>{% endif %}
+
+  <div class="inline">
+    {% if run.status in ("queued","running") %}
+      <form method="post" action="/runs/{{ run.id }}/stop"
+            onsubmit="return confirm('Stop this run? Research already finished is kept.')">
+        <button type="submit" class="danger">Stop this run</button>
+      </form>
+      <span class="muted small">SIGTERM, so the research model is released on the way out.</span>
+    {% endif %}
+    <a class="button secondary" href="/runs/{{ run.id }}/log">Full log</a>
+    {% if results_file %}
+      <a class="button secondary" href="/runs/{{ run.id }}/results">Research JSON</a>
+    {% endif %}
+  </div>
+</div>
+
+{# ── The episode ───────────────────────────────────────────────────────────── #}
+{% if run.episode.job_id %}
+<div class="card">
+  <h3 style="margin-top:0">Episode</h3>
+  {% if audio %}
+    <p><span class="status done">ready</span></p>
+    <audio controls preload="none" src="/runs/{{ run.id }}/audio"></audio>
+    <p class="small muted">{{ audio.stat().st_size | filesize }} —
+      <a href="/runs/{{ run.id }}/audio" download>download</a></p>
+  {% elif run.episode.status == "completed" %}
+    <p><span class="status failed">audio missing</span>
+      Open Notebook says this episode completed, but the file it named
+      (<code>{{ run.episode.audio_rel or "—" }}</code>) is not on disk.
+      Look in <a href="{{ on_ui }}">Open Notebook</a> — nothing here will guess at
+      another file, because guessing is how one episode's audio gets served as another's.</p>
+  {% elif run.episode.status in ("failed","error") %}
+    <p><span class="status failed">{{ run.episode.status }}</span>
+      {{ run.episode.error or "Open Notebook did not say why." }}</p>
+    <p class="small muted">The research survives this — it is in the notebook and in the
+      research JSON above.</p>
+  {% else %}
+    <p><span class="status running">{{ run.episode.status or "generating" }}</span>
+      <span class="muted">checked {{ run.episode.checked_at | ago }}</span></p>
+    <p class="small muted">Generation is 20–90 minutes on this box, depending on the
+      profile's segment count and whether it is a VibeVoice profile. This page keeps
+      watching; you can close it.</p>
+  {% endif %}
+  <p class="small muted">job <code>{{ run.episode.job_id }}</code>
+    {% if not run.episode.reachable %}— Open Notebook did not answer the last poll{% endif %}</p>
+</div>
+{% endif %}
+
+{# ── Sub-questions ─────────────────────────────────────────────────────────── #}
+<h2>Sub-questions</h2>
+{% if state.dropped or state.excluded_from_episode %}
+  <div class="warn">
+    {% if state.dropped %}<strong>{{ state.dropped }} sub-question(s) were dropped.</strong>
+      Research found no page it actually read, so an answer would have been the model's own
+      knowledge rather than research — the pipeline discards those rather than narrate them.{% endif %}
+    {% if state.excluded_from_episode %} {{ state.excluded_from_episode }} were excluded from
+      the episode for the same reason.{% endif %}
+  </div>
+{% endif %}
+<ul class="qs">
+  {% for item in state.questions %}
+  <li class="{{ item.status }}">
+    <span class="mark">
+      {%- if item.status == "researched" %}<span class="ok">✓</span>
+      {%- elif item.status == "dropped" %}<span class="bad">✕</span>
+      {%- elif item.status == "researching" %}<span class="muted">◍</span>
+      {%- else %}<span class="muted">·</span>{% endif -%}
+    </span>
+    <span class="q">
+      {{ item.question }}
+      <div class="meta">
+        {%- if item.status == "researched" -%}
+          {{ item.sources }} source(s) read, {{ item.turns }} turns, {{ item.conclusion }} conclusion
+          {%- if not item.synthesized %} — <span class="bad">no synthesis</span>{% endif -%}
+        {%- elif item.status == "dropped" -%}
+          dropped — nothing was read, so there was nothing to write from
+        {%- elif item.status == "researching" -%}
+          researching now{% if state.turn %}, turn {{ state.turn.turn }}{% endif %}
+        {%- else -%}
+          not started
+        {%- endif -%}
+      </div>
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+<p class="small muted">{{ state.researched }} of {{ state.questions|length }} researched,
+  {{ state.sources_total }} page(s) read in total.
+  {% if state.notebook %} Notebook: {{ state.notebook.notes }} research notes +
+    {{ state.notebook.links }} link sources.{% endif %}</p>
+
+{% if state.warnings %}
+<details>
+  <summary>Warnings ({{ state.warnings|length }})</summary>
+  <ul class="small">{% for w in state.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</details>
+{% endif %}
+
+<details {% if run.status in ("failed","vanished") %}open{% endif %}>
+  <summary>Log (last 60 lines)</summary>
+  <pre>{{ log_tail or "(nothing yet)" }}</pre>
+</details>
+
+<div class="scroll"><table class="muted small">
+  <tr><th>run</th><td><code>{{ run.id }}</code></td></tr>
+  <tr><th>unit</th><td><code>{{ run.unit }}</code></td></tr>
+  <tr><th>created</th><td>{{ run.meta.created_at }}</td></tr>
+  {% if run.meta.started_at %}<tr><th>started</th><td>{{ run.meta.started_at }}</td></tr>{% endif %}
+  {% if run.meta.finished_at %}<tr><th>finished</th><td>{{ run.meta.finished_at }}</td></tr>{% endif %}
+  <tr><th>profiles</th><td>{{ run.params.episode_profile }} / {{ run.params.speaker_profile }}</td></tr>
+  {% if run.params.source_document %}
+  <tr><th>document</th><td>{{ run.params.source_document }}</td></tr>{% endif %}
+</table></div>
+{% endblock %}

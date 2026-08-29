@@ -1,0 +1,160 @@
+{# One stylesheet, inline. Three pages do not need an asset pipeline or a request that
+   can 404 behind `tailscale serve`. Deliberately the same shape as halo-workbench's --
+   these two are read on the same phone, from the same tailnet, ten minutes apart -- but
+   a different accent, so you can tell at a glance which box you are looking at.
+   * one accent, used only for the primary action and focus rings;
+   * light and dark from the same tokens;
+   * 16px minimum on anything typed into -- iOS Safari zooms the page otherwise;
+   * touch targets at least 44px: this is watched from a phone more than a desk. #}
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}drp-web{% endblock %}</title>
+{% block head %}{% endblock %}
+<style>
+ :root{
+   --bg:#fbfbfc; --surface:#fff; --line:#e5e4ea; --ink:#1b1a20; --muted:#6c6a75;
+   --accent:#5348b8; --accent-ink:#fff; --warn-line:#c9922f; --warn-bg:#fbf3e2;
+   --ok:#2c7a5a; --bad:#b3392f; --info:#3a6ea8;
+   --radius:12px; --pad:1rem; --shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px -18px rgba(0,0,0,.35);
+ }
+ @media (prefers-color-scheme:dark){
+   :root{
+     --bg:#151519; --surface:#1c1c22; --line:#31313a; --ink:#e9e8ee; --muted:#9997a3;
+     --accent:#9f95f0; --accent-ink:#1b1733; --warn-line:#d6a343; --warn-bg:#2a2317;
+     --ok:#5fbf9c; --bad:#e2685c; --info:#82b1e8;
+     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+   }
+ }
+ *{box-sizing:border-box}
+ html{-webkit-text-size-adjust:100%}
+ body{margin:0;background:var(--bg);color:var(--ink);
+   font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+   font-feature-settings:"kern","liga"}
+ .wrap{max-width:64rem;margin:0 auto;padding:1.25rem max(1rem,env(safe-area-inset-left)) 4rem}
+ a{color:inherit;text-decoration-color:color-mix(in oklab,var(--accent) 55%,transparent);
+   text-underline-offset:.15em}
+ a:hover{text-decoration-color:var(--accent)}
+ code,pre,.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;font-size:.9em}
+ code{background:color-mix(in oklab,var(--ink) 7%,transparent);padding:.1em .35em;
+   border-radius:5px;overflow-wrap:anywhere}
+ pre{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+   padding:.9rem;overflow-x:auto;white-space:pre-wrap;word-break:break-word;margin:.6rem 0;
+   font-size:.82rem;line-height:1.5}
+
+ header.top{position:sticky;top:0;z-index:5;background:color-mix(in oklab,var(--bg) 88%,transparent);
+   backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+ header.top .wrap{padding-top:.6rem;padding-bottom:.6rem;display:flex;gap:.35rem .9rem;
+   align-items:center;flex-wrap:wrap}
+ .brand{font-weight:650;letter-spacing:-.01em;text-decoration:none;margin-right:.4rem}
+ nav.tools{display:flex;gap:.15rem;flex-wrap:wrap;margin-left:auto}
+ nav.tools a{display:inline-flex;align-items:center;min-height:2.4rem;padding:.25rem .7rem;
+   border-radius:999px;text-decoration:none;color:var(--muted);font-size:.95rem}
+ nav.tools a:hover{background:color-mix(in oklab,var(--ink) 6%,transparent);color:var(--ink)}
+ nav.tools a[aria-current]{background:color-mix(in oklab,var(--accent) 14%,transparent);
+   color:var(--ink);font-weight:550}
+
+ h1{font-size:1.5rem;line-height:1.25;letter-spacing:-.02em;margin:1.4rem 0 .2rem}
+ h2{font-size:1.1rem;letter-spacing:-.01em;margin:2rem 0 .5rem}
+ h3{font-size:.95rem;margin:1.2rem 0 .3rem}
+ p{margin:.7rem 0} .lede{color:var(--muted);max-width:56ch}
+ .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+   padding:var(--pad);margin:1rem 0;box-shadow:var(--shadow)}
+ .muted{color:var(--muted)} .small{font-size:.88rem}
+ .big{font-size:1.6rem;font-weight:600;letter-spacing:-.02em;margin:.3rem 0}
+ .warn{border-left:3px solid var(--warn-line);background:var(--warn-bg);
+   padding:.7rem .9rem;border-radius:0 8px 8px 0;margin:.8rem 0}
+ .bad{color:var(--bad)} .ok{color:var(--ok)}
+
+ .status{display:inline-flex;align-items:center;gap:.4em;padding:.15rem .6rem;border-radius:999px;
+   font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+   background:color-mix(in oklab,var(--ink) 8%,transparent);color:var(--muted)}
+ .status::before{content:"";width:.5em;height:.5em;border-radius:50%;background:currentColor}
+ .status.done{background:color-mix(in oklab,var(--ok) 16%,transparent);color:var(--ok)}
+ .status.failed,.status.vanished{background:color-mix(in oklab,var(--bad) 15%,transparent);color:var(--bad)}
+ .status.running{background:color-mix(in oklab,var(--accent) 18%,transparent);color:var(--accent)}
+ .status.queued,.status.stopped{background:color-mix(in oklab,var(--ink) 10%,transparent);color:var(--muted)}
+
+ /* The phase strip: where the run is, in the pipeline's own five phases. */
+ ol.phases{list-style:none;display:flex;flex-wrap:wrap;gap:.35rem;padding:0;margin:.8rem 0 0}
+ ol.phases li{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;
+   color:var(--muted);background:color-mix(in oklab,var(--ink) 6%,transparent);
+   padding:.2rem .6rem;border-radius:999px}
+ ol.phases li.at{background:var(--accent);color:var(--accent-ink)}
+ ol.phases li.past{background:color-mix(in oklab,var(--ok) 15%,transparent);color:var(--ok)}
+
+ ul.qs{list-style:none;padding:0;margin:.6rem 0}
+ ul.qs li{border-top:1px solid var(--line);padding:.65rem 0;display:flex;gap:.7rem;align-items:flex-start}
+ ul.qs li:first-child{border-top:0}
+ ul.qs .mark{flex:0 0 1.4rem;text-align:center;font-weight:700}
+ ul.qs .q{flex:1;min-width:0}
+ ul.qs .meta{color:var(--muted);font-size:.85rem}
+ ul.qs li.dropped .q{color:var(--muted)}
+
+ button,.button{font:inherit;font-weight:550;min-height:2.75rem;padding:.55rem 1.1rem;
+   border-radius:10px;border:1px solid transparent;background:var(--accent);color:var(--accent-ink);
+   cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;text-decoration:none}
+ button:hover,.button:hover{filter:brightness(1.06)}
+ button.secondary,.button.secondary{background:transparent;border-color:var(--line);color:var(--ink)}
+ button.secondary:hover{background:color-mix(in oklab,var(--ink) 5%,transparent)}
+ button.danger{background:transparent;border-color:color-mix(in oklab,var(--bad) 50%,var(--line));
+   color:var(--bad)}
+ :where(a,button,input,select,textarea,summary):focus-visible{
+   outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+ input:not([type=checkbox]):not([type=radio]),select,textarea{
+   font:inherit;font-size:16px;color:inherit;background:var(--surface);border:1px solid var(--line);
+   border-radius:10px;padding:.6rem .7rem;max-width:100%;min-height:2.75rem}
+ textarea{width:100%;line-height:1.6;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+   font-size:15px}
+ label{display:inline-block;font-weight:550}
+ label:has(textarea),label:has(input:not([type=checkbox]):not([type=radio])){display:block}
+ label:has(textarea) textarea,label:has(input) input{margin-top:.3rem;font-weight:400}
+ label .hint{display:block;font-weight:400;color:var(--muted);font-size:.85rem;margin-top:.1rem}
+ form p{margin:.9rem 0}
+ .row{display:flex;gap:.9rem;flex-wrap:wrap}
+ .row > *{flex:1 1 12rem}
+ .inline{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.8rem 0}
+ details{border:1px solid var(--line);border-radius:var(--radius);padding:.2rem .9rem;margin:1rem 0;
+   background:var(--surface)}
+ details[open]{padding-bottom:.6rem}
+ summary{cursor:pointer;padding:.7rem 0;font-weight:550;min-height:2.75rem;display:flex;align-items:center}
+
+ .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:.5rem -.25rem}
+ table{border-collapse:collapse;width:100%;font-size:.95rem}
+ th{text-align:left;font-weight:600;color:var(--muted);font-size:.82rem;text-transform:uppercase;
+   letter-spacing:.05em}
+ td,th{padding:.55rem .7rem .55rem 0;border-bottom:1px solid var(--line);vertical-align:top}
+ tr:last-child td,tr:last-child th{border-bottom:0}
+
+ /* Service strip on the form: four dots and a memory figure. */
+ .checks{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin:.2rem 0 0;padding:0;list-style:none;
+   font-size:.85rem;color:var(--muted)}
+ .checks li{display:inline-flex;align-items:center;gap:.35rem}
+ .dot{width:.55em;height:.55em;border-radius:50%;background:var(--muted);flex:none}
+ .dot.up{background:var(--ok)} .dot.down{background:var(--bad)} .dot.idle{background:var(--info)}
+
+ audio{width:100%;margin:.6rem 0}
+ @media (max-width:34rem){
+   .wrap{padding-left:.9rem;padding-right:.9rem}
+   h1{font-size:1.3rem} .big{font-size:1.35rem}
+   nav.tools{margin-left:0;width:100%}
+ }
+ @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="/">deep&#8209;research&#8209;podcast</a>
+  <nav class="tools">
+    <a href="/" {% if page == "new" %}aria-current="page"{% endif %}>new run</a>
+    <a href="/runs" {% if page == "runs" %}aria-current="page"{% endif %}>runs</a>
+    <a href="http://evo-x3:8093/">workbench</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
+  <h1>{% block pagetitle %}{% endblock %}</h1>
+  {% block body %}{% endblock %}
+</div>
