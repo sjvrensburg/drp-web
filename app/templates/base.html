@@ -150,7 +150,11 @@
   <nav class="tools">
     <a href="/" {% if page == "new" %}aria-current="page"{% endif %}>new run</a>
     <a href="/runs" {% if page == "runs" %}aria-current="page"{% endif %}>runs</a>
-    <a href="http://evo-x3:8093/">workbench</a>
+    {# The other web UI on this box, ../halo-workbench. Its Tailscale Service name
+       rather than evo-x3:8093 (2026-08-29), so the link follows the service if it
+       moves and carries no port for anyone to remember. Never a 100.x address --
+       a tailnet address returns tailscaled's own 404 (halo-prep pitfall #33). #}
+    <a href="http://halo-workbench/">workbench</a>
   </nav>
 </div></header>
 

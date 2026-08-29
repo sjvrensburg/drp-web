@@ -153,7 +153,7 @@ async def start_run(
             # converter on this box.
             raise HTTPException(
                 400, "this takes already-converted text or markdown, not a PDF — run it "
-                     "through halo-workbench's marker tool first (http://evo-x3:8093/marker)")
+                     "through halo-workbench's marker tool first (http://halo-workbench/marker)")
         upload = (source_document.filename, data)
 
     params = {

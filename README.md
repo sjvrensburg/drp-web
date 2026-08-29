@@ -104,7 +104,7 @@ any uploaded source document; it is kept for 90 days.
 ## Related
 
 - `../deep-research-podcast` — the pipeline, its README, and the bugs that shaped it.
-- `../halo-workbench` — the sibling app on `:8093`. Same skeleton, same design rules;
-  its **marker** tool is where a PDF becomes the markdown this app will accept as a
-  source document.
+- `../halo-workbench` — the sibling app, at `http://halo-workbench/` (also `:8093` on
+  the node). Same skeleton, same design rules; its **marker** tool is where a PDF
+  becomes the markdown this app will accept as a source document.
 - `../halo-prep` — the runbook for the box: model units, ports, pitfalls.
