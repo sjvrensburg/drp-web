@@ -15,10 +15,11 @@ from pathlib import Path
 
 VERSION = "0.1.0"
 
-# Port. Duplicated in: config/drp-web.service, scripts/dev.sh, README, and --
-# invisibly, outside this repo -- the `tailscale serve --http=8095` registration in
-# tailscaled. Nothing here will tell you that one is stale; remote clients just stop
-# working. 8093 is halo-workbench, 8094 is llama-hymt2, so this took the next free one.
+# Port. Duplicated in: config/drp-web.service, scripts/dev.sh, README, and -- invisibly,
+# outside this repo -- TWO registrations in tailscaled: `tailscale serve --http=8095`
+# (http://evo-x3:8095) and the Tailscale Service `svc:drp-web` (http://drp-web/), which
+# proxies port 80 here. Nothing here will tell you either is stale; remote clients just
+# stop working. 8093 is halo-workbench, 8094 is llama-hymt2, so this took the next free one.
 PORT = 8095
 
 # ── The pipeline ─────────────────────────────────────────────────────────────

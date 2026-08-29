@@ -3,9 +3,15 @@
 #   cp config/drp-web.service ~/.config/systemd/user/
 #   systemctl --user daemon-reload && systemctl --user enable --now drp-web
 #
-# Remote access additionally needs, from the operator:
-#   sudo tailscale serve --bg --http=8095 http://127.0.0.1:8095
-# which lives in tailscaled, not in this repo, and will not survive a rebuild.
+# Remote access needs two registrations that live in tailscaled rather than in this repo
+# and will not survive a rebuild:
+#   sudo tailscale serve --bg --http=8095 http://127.0.0.1:8095      # http://evo-x3:8095
+#   tailscale serve --service=svc:drp-web --bg --yes --http=80 \
+#       http://127.0.0.1:8095                                        # http://drp-web/
+# The second is a Tailscale Service and needs three more things this repo does not create:
+# the Service defined in the admin console, a grant in the tailnet policy, and a TAGGED
+# host -- tagging also ends Tailscale SSH to the box unless the policy has a tag:server
+# rule first. ../halo-prep/docs/06 §7 has the procedure.
 
 [Unit]
 Description=drp-web — deep-research-podcast in a browser (:8095)
