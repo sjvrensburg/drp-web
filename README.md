@@ -2,7 +2,8 @@
 
 Deep-research podcasts from a browser, on the tailnet.
 
-A front end for [`../deep-research-podcast`](../deep-research-podcast) — the pipeline
+A front end for [`../local-podcast-studio`](../local-podcast-studio) (named `deep-research-podcast`
+until 2026-10-09) — the pipeline
 that drives OpenResearcher through a multi-turn web-research loop per sub-question and
 turns the grounded results into an Open Notebook episode. That pipeline is a CLI meant
 to be driven by an agent and left alone for hours. This is the other way to drive it:
@@ -80,7 +81,7 @@ nothing.
 
 ## What it assumes is already there
 
-- `~/Projects/deep-research-podcast` (`DRPWEB_REPO`), run under the system `python3`;
+- `~/Projects/local-podcast-studio` (`DRPWEB_REPO`), run under the system `python3`;
 - Open Notebook on `:5055`, with the episode/speaker profiles the form lists;
 - the writer model on `:8088` — it enriches questions, writes the reports, and drafts
   sub-question suggestions;
@@ -103,7 +104,7 @@ any uploaded source document; it is kept for 90 days.
 
 ## Related
 
-- `../deep-research-podcast` — the pipeline, its README, and the bugs that shaped it.
+- `../local-podcast-studio` — the pipeline, its README, and the bugs that shaped it.
 - `../halo-workbench` — the sibling app, at `http://halo-workbench/` (also `:8093` on
   the node). Same skeleton, same design rules; its **marker** tool is where a PDF
   becomes the markdown this app will accept as a source document.

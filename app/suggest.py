@@ -1,7 +1,7 @@
 """Draft sub-questions for a topic. Drafts only -- nothing here starts a run.
 
 The pipeline deliberately does not decompose a topic: "sub-question decomposition is
-the caller's job, not the pipeline's" (../deep-research-podcast/CLAUDE.md). Until now
+the caller's job, not the pipeline's" (../local-podcast-studio/CLAUDE.md). Until now
 the caller was an agent. A person at a form is a worse decomposer than an agent only
 because they have no draft to react to, so this offers one -- and then makes them
 approve it. The suggestions land in the textarea, editable, and the run does not start

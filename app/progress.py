@@ -2,7 +2,7 @@
 
 The pipeline was written for a human reading a journal, not for a parser, so this
 reads its log lines rather than any structured output. That is a real coupling and it
-is one-way: every marker below is a `log()` call in ../deep-research-podcast, and a
+is one-way: every marker below is a `log()` call in ../local-podcast-studio, and a
 reworded line degrades this page to "running, elapsed 41m" rather than breaking it.
 Nothing here raises, nothing here is load-bearing for the run itself.
 

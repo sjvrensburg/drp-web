@@ -5,7 +5,7 @@ systemd unit, another repo, a Docker container or `tailscaled`, and nothing
 validates the duplication -- so each one names its other half.
 
 The largest duplication is the block of `DRP_*` variables below. They are the
-pipeline's interface (../deep-research-podcast/CLAUDE.md, "Running") and this app
+pipeline's interface (../local-podcast-studio/CLAUDE.md, "Running") and this app
 is now a THIRD caller of it, beside the Hermes skill and the operator's shell.
 Neither of the other two reads this file.
 """
@@ -27,7 +27,7 @@ PORT = 8095
 # repo's convention is "stdlib only -- do not add a dependency", and importing it
 # from a FastAPI app would make FastAPI its dependency by the back door. It also
 # calls main() at module scope, so importing it RUNS it.
-DRP_REPO = Path(os.environ.get("DRPWEB_REPO", Path.home() / "Projects/deep-research-podcast"))
+DRP_REPO = Path(os.environ.get("DRPWEB_REPO", Path.home() / "Projects/local-podcast-studio"))
 DRP_SCRIPT = DRP_REPO / "deep-research-podcast.py"
 
 # Run state. Directories, not a database -- see CLAUDE.md "Runs are directories".
@@ -47,7 +47,7 @@ RUN_RETENTION_DAYS = int(os.environ.get("DRPWEB_RETENTION_DAYS", 90))
 UNIT_PREFIX = "drp-web-run-"
 
 # ── What the pipeline talks to ───────────────────────────────────────────────
-# Duplicated in: hermes-skills/deep-research-podcast/SKILL.md's launch block, which
+# Duplicated in: ../local-podcast-studio/pi-skills/deep-research-podcast/scripts/launch.sh, which
 # is the other caller of the same script and must stay in agreement with this.
 #
 # THREE LLM ROLES, and only one is the research model (pipeline CLAUDE.md). :8085 is

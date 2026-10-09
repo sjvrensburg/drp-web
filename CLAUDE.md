@@ -4,7 +4,7 @@ Guidance for Claude Code (claude.ai/code) working in this repository.
 
 ## What this is
 
-A FastAPI + Jinja web front end for `../deep-research-podcast`, on `:8095`, reachable on
+A FastAPI + Jinja web front end for `../local-podcast-studio`, on `:8095`, reachable on
 the tailnet at `http://drp-web/` (a Tailscale Service) and at `http://evo-x3:8095` (a
 `tailscale serve` registration). Server-rendered HTML, no build step, no npm,
 four dependencies (`fastapi`, `uvicorn`, `jinja2`, `python-multipart`) and nothing else

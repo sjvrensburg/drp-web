@@ -1,4 +1,4 @@
-"""drp-web — a browser front end for ../deep-research-podcast, over Tailscale.
+"""drp-web — a browser front end for ../local-podcast-studio, over Tailscale.
 
 Routing, the lifespan, and the two things a page can do that a form cannot: serve an
 episode's audio with range support, and hand back a run's log.
