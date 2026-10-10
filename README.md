@@ -108,4 +108,5 @@ any uploaded source document; it is kept for 90 days.
 - `../halo-workbench` — the sibling app, at `http://halo-workbench/` (also `:8093` on
   the node). Same skeleton, same design rules; its **marker** tool is where a PDF
   becomes the markdown this app will accept as a source document.
-- `../halo-prep` — the runbook for the box: model units, ports, pitfalls.
+- halo-prep — the author's private runbook for the box: model units, ports, pitfalls. It is
+  not public; references to it here are provenance.
