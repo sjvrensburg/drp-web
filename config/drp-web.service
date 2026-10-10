@@ -20,7 +20,7 @@ Description=drp-web — deep-research-podcast in a browser (:8095)
 
 [Service]
 Type=exec
-WorkingDirectory=/home/stefan/Projects/drp-web
+WorkingDirectory=%h/Projects/drp-web
 # --host 127.0.0.1: never a routable address. `tailscale serve` proxies to loopback, so
 # a firewall mistake cannot expose this to the LAN.
 #
@@ -33,7 +33,7 @@ WorkingDirectory=/home/stefan/Projects/drp-web
 # therefore SURVIVES `systemctl --user stop drp-web`. That is deliberate and is the
 # whole reason the runs are not threads: restarting this app must not cost a 3-hour
 # run. Do not add KillMode=none or Delegate= to "fix" it.
-ExecStart=/home/stefan/venvs/drpweb/bin/uvicorn app.main:app --host 127.0.0.1 --port 8095
+ExecStart=%h/venvs/drpweb/bin/uvicorn app.main:app --host 127.0.0.1 --port 8095
 # Python block-buffers stdout when it is a pipe, so without this the journal shows the
 # supervisor's lines minutes late, in a lump -- on a service whose normal state is
 # "quiet for forty minutes".
