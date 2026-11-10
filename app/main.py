@@ -149,11 +149,12 @@ async def start_run(
             raise HTTPException(400, "that document is empty")
         if data[:5] == b"%PDF-":
             # The pipeline does not convert documents and says so; handing it a PDF
-            # produces an episode narrating binary. halo-workbench's marker tool is the
-            # converter on this box.
+            # produces an episode narrating binary. marker is the converter on this box
+            # (halo-workbench, which used to wrap it, was retired 2026-11-10).
             raise HTTPException(
-                400, "this takes already-converted text or markdown, not a PDF — run it "
-                     "through halo-workbench's marker tool first (http://halo-workbench/marker)")
+                400, "this takes already-converted text or markdown, not a PDF — convert it "
+                     "with marker first (attach it in the opencode web UI, or send it to the "
+                     "assistant on Signal)")
         upload = (source_document.filename, data)
 
     params = {
